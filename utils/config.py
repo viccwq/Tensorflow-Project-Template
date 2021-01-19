@@ -32,5 +32,6 @@ def process_config(json_file, is_train=True):
     config.saved_model_dir  = os.path.join(path, "experiments", config.exp_name, "saved_model/")
     config.update(is_train=is_train)
     config.update(tf_version=[int(i) for i in tf.__version__.split(".")])
+    config.update(keras_format=tf.keras.backend.image_data_format())
     g_config.__init(config)
     return config

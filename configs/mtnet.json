@@ -1,0 +1,27 @@
+{
+  "arch": "models.mtnet.mtnet",
+  "batch_size": 50,
+  "data_train": "None",
+  "dataset": "data_loader.dataset_mtnet",
+  "dataset_type": "TF",
+  "exp_name": "mtnet",
+  "input_c": 1,
+  "input_h": 448,
+  "input_w": 1024,
+  "learning_rate": 0.8,
+  "max_to_keep": 5,
+  "momentum": 0.9,
+  "num_class": 10,
+  "num_epochs": 40,
+  "num_iter_per_epoch": 50,
+  "num_save_interval": 3,
+  "num_sum_interval": 5,
+  "optimizer": "adadelta",
+  "output_shape": [
+    10
+  ],
+  "ratio_valid": 0.01,
+  "state_size": [
+    784
+  ]
+}

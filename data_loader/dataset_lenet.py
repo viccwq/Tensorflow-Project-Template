@@ -39,7 +39,10 @@ class DataSet:
             else:
                 image, label = next(self.val_iter)
             #add some image processing with tensorflow here
-            x = tf.expand_dims(image, axis = -1)
+            if "first" in self.config.keras_format:
+                x = tf.expand_dims(image, axis = 1)
+            else:
+                x = tf.expand_dims(image, axis = -1)
             x = tf.cast(x,dtype=tf.float32)
             x = x / 255.0
 
@@ -111,7 +114,10 @@ if __name__ == "__main__":
     print(type(y_), type(y_.numpy()))
     print(y_.shape, y_.ndim)
     for i in range(x_.shape[0]):
-        show_image_cv(x_.numpy()[i,...], title="img-train")
+        if "first" in keras.backend.image_data_format():
+            show_image_cv(x_.numpy()[i, 0, ...], title="img-train")
+        else:
+            show_image_cv(x_.numpy()[i, ...], title="img-train")
         print(np.max(x_.numpy()))
 
     x_, y_ = data.get_next(data="val")
@@ -120,7 +126,10 @@ if __name__ == "__main__":
     print(type(y_), type(y_.numpy()))
     print(y_.shape, y_.ndim)
     for i in range(x_.shape[0]):
-        show_image_cv(x_.numpy()[i,...], title="img-val")
+        if "first" in keras.backend.image_data_format():
+            show_image_cv(x_.numpy()[i, 0, ...], title="img-val")
+        else:
+            show_image_cv(x_.numpy()[i, ...], title="img-val")
         print(np.max(x_.numpy()))
 
     x_, y_ = data.get_next()
@@ -129,6 +138,9 @@ if __name__ == "__main__":
     print(type(y_), type(y_.numpy()))
     print(y_.shape, y_.ndim)
     for i in range(x_.shape[0]):
-        show_image_cv(x_.numpy()[i,...], title="img-train")
+        if "first" in keras.backend.image_data_format():
+            show_image_cv(x_.numpy()[i, 0, ...], title="img-train")
+        else:
+            show_image_cv(x_.numpy()[i, ...], title="img-train")
         print(np.max(x_.numpy()))
 

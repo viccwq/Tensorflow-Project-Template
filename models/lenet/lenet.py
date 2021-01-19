@@ -15,10 +15,12 @@ import sys
 import time
 import numpy as np
 import tensorflow as tf
+from bunch import Bunch
 from tensorflow.keras.layers import Input, Conv2D, MaxPooling2D, Activation, BatchNormalization, Flatten, Dense
 from tensorflow.keras import Input, Model, Sequential
 
 import utils.config_val as g_config
+from models.wrapper.layer_caffe import *
 
 #lenet5
 
@@ -59,22 +61,51 @@ class MyModel(Model):
         o = self.d3(x)
         return o
 
+'''
 layers = [
-    Input(shape=(28, 28, 1)),
+    Input(shape=inp_shape[1:]),
     Conv2D(filters=6, kernel_size=5, padding="same", activation='relu'),
     MaxPooling2D(pool_size=(2, 2), strides=(2, 2)),
     Conv2D(filters=16, kernel_size=5, padding="same", activation='relu'),
     MaxPooling2D(pool_size=(2, 2), strides=(2, 2)),
-    Flatten(),
+    Flatten(data_format="channels_last"),
     Dense(128, activation='relu'),
     Dense(84, activation='relu'),
     Dense(10, activation=None)
 ]
+'''
+
+def lenet_model(input_shape):
+    #create inputs
+    inputs = tf.keras.Input(shape=(input_shape[1],input_shape[2], input_shape[3]))
+    #linear layer should be replace with scale in caffe
+    x = Activation("linear")(inputs)
+    #create layers
+    x = Conv2D(filters=6, kernel_size=5, padding="same", activation='relu')(x)
+    x = MaxPooling2D(pool_size=(2, 2), strides=(2, 2))(x)
+    x1 = Conv2D(filters=10, kernel_size=5, padding="same", activation='relu')(x)
+    x2 = Conv2D(filters=16, kernel_size=3, padding="same", activation='relu')(x)
+    x = ConcatCaffe([x1, x2])
+    x = MaxPooling2D(pool_size=(2, 2), strides=(2, 2))(x)
+    x = Conv2D(filters=32, kernel_size=5, padding="valid", activation='relu', strides=2)(x)
+    x = FlattenCaffe(x)
+    x = Dense(84, activation='relu')(x)
+    y = Dense(10, activation=None)(x)
+    #return the logits
+    return Model(inputs=inputs, outputs=y)
 
 # Create an instance of the model
 def gen_net():
-    net = Sequential(layers) #MyModel()
-    net.build(input_shape=(None, 28, 28, 1))
+    config = g_config.get_cfg()
+    format = config.keras_format
+    if "first" in format:
+        inp_shape = (None, config.input_c, config.input_h, config.input_w)
+    else:
+        inp_shape = (None, config.input_h, config.input_w, config.input_c)
+    print("input shape:{}, keras data format:{}".format(inp_shape, format))
+
+    net = lenet_model(inp_shape)
+    net.build(input_shape=inp_shape)
     net.summary()
     return net
 
@@ -152,6 +183,18 @@ def _get_optimizer(opt_name, params):
 
 #test
 if __name__ == '__main__':
+    config_dict = {
+        "data_train":"<path>/dataset/mnist/mnist.npz",
+        "num_class": 10,
+        "input_h": 28,
+        "input_w": 28,
+        "input_c": 1,
+        "batch_size": 5,
+        "num_iter_per_epoch":2000000,
+    }
+    config_dict.update(keras_format=tf.keras.backend.image_data_format())
+    config = Bunch(config_dict)
+    g_config.__init(config)
 
     class Train():
         def __init__(self):
@@ -185,7 +228,10 @@ if __name__ == '__main__':
 
     train = Train()
 
-    image = tf.random.normal(shape=[2,28,28,1], dtype=tf.float32)
+    if "first" in g_config.get_cfg().keras_format:
+        image = tf.random.normal(shape=[2, 1, 28, 28], dtype=tf.float32)
+    else:
+        image = tf.random.normal(shape=[2, 28, 28, 1], dtype=tf.float32)
     print(image.numpy().shape)
     label = tf.one_hot(tf.range(0, 2), depth=10, axis=-1)
     for i in range(20):
